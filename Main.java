@@ -17,7 +17,7 @@ public class Main
 		int index = 0;
 	//	while(index<data.length)	{  DoStuff	}
 		mql.EmptyTable();
-		mql.InsertData(new String[]{"1","علئ الزازا     "});
+		mql.InsertData(new String[]{"0","root"});
 	//  mql.Reset();
 		mql.Disconnect();
 	//	System.out.print(mql.MQlConnected);
