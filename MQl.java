@@ -1,10 +1,58 @@
 /**
 *	MQl project - 2017/7/30
 *	Author  - Mohammad albai
-*	Version - 0.3[Beta]
-*	THIS PROJECT IS FREE TO USE BUT IT'S NOT OPEN SOURCE YET!
-*	Discription : this project (Mini Query Language) provide you from saving data in files and manage thats data 
-*				  (Query,Insert,Empty,Create,Delete) , MQl class had all methods to make everything easy 
+*	Version - 0.4[Beta]
+*	....
+*	Discription : this project (Mini Query Language) provide you saving data in files and manage these data 
+*				  (Query,Insert,Empty,Create,Delete) in easy way
+*	<MQl extends="MQl_provider.class">
+*		<version>0.4</version>
+*		<methods>
+*			<method name="CreateDataBase" />
+*			<method name="CreateTable" />
+*			<method name="Connect" />
+*			<method name="TableExists" />
+*			<method name="InsertData" />
+*			<method name="Query" />
+*			<method name="DataLength" />
+*			<method name="__open_db__" />
+*			<method name="__encode_data__" />
+*			<method name="__decode_data__" />
+*			<method name="__open__" />
+*			<method name="__update_db_refrence__" />
+*			<method name="__read_lines__" />
+*			<method name="UseTable" />
+*			<method name="GetDetials" />
+*			<method name="EmptyTable" />
+*			<method name="DeleteTable" />
+*			<method name="EmptyDatabase" />
+*			<method name="SetPasswors" />
+*			<method name="CollectDataTable" />
+*			<method name="Reset" />
+*			<method name="__auto_increase_value__" />
+*			<method name="Disconnect" />
+*			<method name="__check_database_files__" />
+*			<method name="__open_new" />
+*		</methods>
+*		<properties>
+*			<property name="bw" />
+*			<property name="tbw" />
+*			<property name="DB_name" />
+*			<property name="_error_" />
+*			<property name="fc" />
+*			<property name="_table_" />
+*			<property name="MQlInsertFlag" />
+*			<property name="MQlError" />
+*			<property name="__pass__" />
+*			<property name="__save_path__" />
+*			<property name="__position_pointer__" />
+*			<property name="ConnectError" />
+*			<property name="MQlConnected" />
+*			<property name="DataAsArray" />
+*			<property name="tables" />
+*			<property name="_table_row_names" />
+*		</properties>
+*	</MQl>
 **/
 
 
@@ -18,6 +66,7 @@ public class MQl extends MQl_provider
 	private BufferedWriter tbw;
 	private String[] _table_row_names = null;
 	private String _table_ = null;
+	public boolean MQlInsertFlag = false;
 	private String __pass__ = null;
 	private int __position_pointer__ = -1;
 	public String[] DataAsArray = null;
@@ -26,6 +75,7 @@ public class MQl extends MQl_provider
 	public boolean ConnectError = false;
 	public String  MQlError = "";
 	public boolean MQlConnected = false;
+	public final String version = "0.4";
 	//
 	//	@param $name,$password
 	//
@@ -76,7 +126,7 @@ public class MQl extends MQl_provider
 	//
 	//	@param $table-name @return boolean
 	//
-	public boolean TableExists(String name)
+	private boolean TableExists(String name)
 	{
 		if(!this.MQlConnected) {this.ConnectError = true; this.MQlError = "[MQl Connection Error]  Connect object isn't defined yet "; throw new Error("[MQl connection error] connect object isn't defined  , access denided");}
 		boolean f = false;
@@ -87,7 +137,11 @@ public class MQl extends MQl_provider
 			String ta = t[i].split("/")[0];
 			this.tables[i] = t[i];
 			if(ta.equals(name.trim())){
-				f = true; this.__position_pointer__ = i; break;
+				if(new File(this.__save_path__+this.DB_name+"/"+name+".table").exists())
+				{
+					f = true; this.__position_pointer__ = i; break;
+				}
+				else { throw new Error("[MQl Table Exists] `"+name+"` table must have '/"+this.DB_name+"/"+name+".table' file"); }
 			}
 		}
 		return f;
@@ -98,7 +152,7 @@ public class MQl extends MQl_provider
 	public void UseTable(String n)
 	{
 		if(!this.MQlConnected) {this.ConnectError = true; this.MQlError = "[MQl Connection Error]  Connect object isn't defined yet "; throw new Error("[MQl connection error] connect object isn't defined  , access denided");}
-		if(!this.TableExists(n)){throw new Error("[MQl UseTable Error] undefined `"+n+"` table in `"+this.DB_name+"`");}
+		if(!this.TableExists(n) && !new File(this.__save_path__+this.DB_name+"/"+n+".table").exists()){throw new Error("[MQl UseTable Error] undefined `"+n+"` table in `"+this.DB_name+"`");}
 		else{this._table_ = n;}
 	}
 	//
@@ -149,6 +203,7 @@ public class MQl extends MQl_provider
 		}
 		this.tbw.write("\n");
 		this.tbw.flush();
+		this.MQlInsertFlag = true;
 	}
 	//
 	//	@param {}
@@ -165,16 +220,20 @@ public class MQl extends MQl_provider
 	public void Query(String p) throws IOException
 	{
 		if(!this.MQlConnected) {this.ConnectError = true; this.MQlError = "[MQl Connection Error]  Connect object isn't defined yet "; throw new Error("[MQl connection error] connect object isn't defined  , access denided");}
+		if(this.__check_database_files__()) { this.ConnectError = true; throw new Error(this.MQlError);}
 		String[] l = this.__read_lines__(this._table_+".table").split("\n");
 		String[] d = this.GetDetials().replaceAll(""+this._table_+" Detials. ","").split(",");
 		int i = 0;
-		for(;i<d.length;i++)
+		boolean c = false;
+		for(;i<d.length-1;i++)
 		{
 			if(d[i].trim().equals(p)){
-				break;
+			c = true;	break;
 			}
-		} this.DataAsArray = new String[l.length];
-		for(int j = 1;j<l.length;j++)
+		}
+		if(!c) { this.MQlError = "[MQl Query Error] `"+p+"` is not a column name in `"+this.DB_name+"`";throw new Error(this.MQlError); }
+		this.DataAsArray = new String[l.length];
+		for(int j = 1;j<l.length-1;j++)
 		{
 			String row = l[j].split(",")[i];
 			this.DataAsArray[j-1] = this._decode_data_(row);
@@ -204,10 +263,25 @@ public class MQl extends MQl_provider
 	//
 	// @param $data-collection
 	//
-	public void CollectDataTable()
+	public String[][] CollectDataTable(String[] data) throws IOException
 	{
-		
+		String[][] d = new String[data.length][this.DataLength()];
+		for(int i=0;i<d.length;i++)
+		{
+				this.Query(data[i]);
+				d[i] = this.DataAsArray;
+		}
+		this.DataAsArray = null;
+		return d;
 	}
+	//
+	//	@param $p(data to be update)
+	//
+	public void Update(String p){}
+	//
+	//	@param $p(data to be delete)
+	//
+	public void Delete(String p){}
 	//
 	//	@param $password
 	//
@@ -218,9 +292,10 @@ public class MQl extends MQl_provider
 	//
 	//	@param {}
 	//
-	public void DataLength()
+	private int DataLength() throws IOException
 	{
-		
+		String[] d = this.__read_lines__(this._table_+".table").split("\n");
+		return d.length;
 	}
 	//
 	//	@param {}
@@ -264,6 +339,22 @@ public class MQl extends MQl_provider
 			throw new Error("[QMl Auto Increase] failed to parse value");
 		}
 	}
+	//
+	// @param {} @return boolean
+	//
+	private boolean __check_database_files__()
+	{
+		if(this.tables == null) { return false;}
+		boolean c = false;
+		File f;
+		for(int i = 0;i<this.tables.length;i++)
+		{
+			f =  new File(this.__save_path__+this.DB_name+"/"+this.tables[i]+".table");
+			if(!f.exists()) {c = false; this.MQlError = "[MQl Seurity Checker] file '/"+this.DB_name+"/"+this.tables[i]+".table' isn't exists"; break;}
+		}
+		return c;
+	}
+	
 	//
 	//	@param {}
 	//
