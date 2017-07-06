@@ -3,7 +3,8 @@
 *	Author  - Mohammad albai
 *	Version - 0.4[Beta]
 *	....
-*	Discription : this project (Mini Query Language) provide you saving data in files and manage these data 
+*	Discription : this project (Mini Query Language) provide you
+*				  saving data in files and manage these data 
 *				  (Query,Insert,Empty,Create,Delete) in easy way
 *	<MQl extends="MQl_provider.class">
 *		<version>0.4</version>
@@ -54,7 +55,24 @@
 *		</properties>
 *	</MQl>
 **/
-
+/**
+*	in the future (VERSION 0.5) :
+*		SmartQuery : speed up fetching data by going to specific point to read from it
+*		Query v1   : will speed query by detect what you looking for 
+*		MQlParser {
+*					AntiInject     : erase all 'inject' chars before insert 
+*					CheckDataState : 2) steps , 1) depends on (__check_database_files__) 
+*									 , then read database (depend on DB_name) , all files (.table) to find 'inject' chars 
+*									 if this steps return false, then the content of injected file will save after remove 'inject' chars
+*				    MaxDataLength  : after max length is reached , file(.table) will be closed and unable to write any more 
+*				  }
+*		Lock 	   : file(.table) will be unable to write any more
+*		MQlRelation Class ... soon - (CREATE CONNECTION BETWEEN TO TABLES [1 by 1] TO LINK DATA)
+*		BackupDatabase : provide you backup data when you loss it
+*		UploadDatabase : probably it's a .Zip file which containing (.db) structer file and (.table) files 
+*		HideErrors     : it prevent MQl class from reaching 'throw new Error()'
+*		fixing (Index  : ? Lenth : ?) error
+**/
 
 import java.io.*;
 import org.apache.commons.codec.binary.*;
@@ -62,20 +80,20 @@ import org.apache.commons.codec.binary.*;
 public class MQl extends MQl_provider
 {
 	/*		CONFIGURATION PROPERTIES 	 */
-	private String fc = "";
+	private String fc 					= "";
 	private BufferedWriter tbw;
-	private String[] _table_row_names = null;
-	private String _table_ = null;
-	public boolean MQlInsertFlag = false;
-	private String __pass__ = null;
-	private int __position_pointer__ = -1;
-	public String[] DataAsArray = null;
-	public String[] tables = null;
-    public final String __save_path__ = "/storage/sdcard0/AppProjects/MyJavaConsoleApp/src/";
-	public boolean ConnectError = false;
-	public String  MQlError = "";
-	public boolean MQlConnected = false;
-	public final String version = "0.4";
+	private String[] _table_row_names 	= null;
+	private String _table_ 				= null;
+	public  boolean MQlInsertFlag 		= false;
+	private String __pass__ 			= null;
+	private int __position_pointer__ 	= -1;
+	public  String[] DataAsArray 		= null;
+	public  String[] tables 			= null;
+    public  final String __save_path__  = "/storage/sdcard0/AppProjects/MyJavaConsoleApp/src/";
+	public  boolean ConnectError 	    = false;
+	public  String  MQlError 			= "";
+	public  boolean MQlConnected 		= false;
+	public  final String version 		= "0.4";
 	//
 	//	@param $name,$password
 	//
@@ -161,7 +179,7 @@ public class MQl extends MQl_provider
 	public String GetDetials()
 	{
 		if(!this.MQlConnected) {this.ConnectError = true; this.MQlError = "[MQl Connection Error]  Connect object isn't defined yet "; throw new Error("[MQl connection error] connect object isn't defined  , access denided");}
-		if(this._table_ == null || this.__position_pointer__ == -1) {throw new Error("[MQl Update DB Refrence Error] UseTable Error");}
+		if(this._table_ == null || this.__position_pointer__ == -1) {throw new Error("[MQl Preparing Error] Connect object or table is't exists");}
 		String[] c = this.fc.split("\n");
 		String r = ""+this._table_+" Detials. ";
 		for(int i = 1;i<c.length;i++)
@@ -186,7 +204,6 @@ public class MQl extends MQl_provider
 	{
 		if(!this.MQlConnected) {this.ConnectError = true; this.MQlError = "[MQl Connection Error]  Connect object isn't defined yet "; throw new Error("[MQl connection error] connect object isn't defined  , access denided");}
 		if(this._table_ == null || this.__position_pointer__ == -1) {throw new Error("[MQl Insert Data Error] ");}
-		String res = "";
 		int v = -1;
 		this.tbw = new BufferedWriter(new FileWriter("/storage/sdcard0/AppProjects/MyJavaConsoleApp/src/"+this.DB_name+"/"+this._table_+".table",true));
 		String[] c = this.fc.split("\n");
@@ -217,7 +234,7 @@ public class MQl extends MQl_provider
 	//
 	// @param $query-string(get data as array)
 	//
-	public void Query(String p) throws IOException
+	public void Query(String p,int lim) throws IOException
 	{
 		if(!this.MQlConnected) {this.ConnectError = true; this.MQlError = "[MQl Connection Error]  Connect object isn't defined yet "; throw new Error("[MQl connection error] connect object isn't defined  , access denided");}
 		if(this.__check_database_files__()) { this.ConnectError = true; throw new Error(this.MQlError);}
@@ -225,7 +242,7 @@ public class MQl extends MQl_provider
 		String[] d = this.GetDetials().replaceAll(""+this._table_+" Detials. ","").split(",");
 		int i = 0;
 		boolean c = false;
-		for(;i<d.length-1;i++)
+		for(;i<d.length;i++)
 		{
 			if(d[i].trim().equals(p)){
 			c = true;	break;
@@ -233,11 +250,12 @@ public class MQl extends MQl_provider
 		}
 		if(!c) { this.MQlError = "[MQl Query Error] `"+p+"` is not a column name in `"+this.DB_name+"`";throw new Error(this.MQlError); }
 		this.DataAsArray = new String[l.length];
-		for(int j = 1;j<l.length-1;j++)
-		{
-			String row = l[j].split(",")[i];
-			this.DataAsArray[j-1] = this._decode_data_(row);
-		}
+			for(int j = 1;j<l.length;j++)
+			{
+				String row = l[j].split(",")[i];
+				this.DataAsArray[j-1] = this._decode_data_(row);
+			}
+		
 	}
 	//
 	//	@param $table-name
@@ -263,16 +281,26 @@ public class MQl extends MQl_provider
 	//
 	// @param $data-collection
 	//
-	public String[][] CollectDataTable(String[] data) throws IOException
+	public String[][] CollectDataTable(String[] data,int l) throws IOException
 	{
-		String[][] d = new String[data.length][this.DataLength()];
-		for(int i=0;i<d.length;i++)
-		{
-				this.Query(data[i]);
+		String[][] d = new String[data.length][];
+			for(int i=0;i<d.length;i++)
+			{
+				this.Query(data[i],l);
 				d[i] = this.DataAsArray;
-		}
-		this.DataAsArray = null;
-		return d;
+			}
+			String[][] md = new String[data.length][];
+			if(l == 2) {md = d;}
+			else if(l == 0)
+			{
+				for(int i = 0; i<d.length;i++)
+				{
+					md[i][0] = d[i][0];
+				}
+			}
+		this.DataAsArray =  null;
+		d = null;
+		return md;
 	}
 	//
 	//	@param $p(data to be update)
